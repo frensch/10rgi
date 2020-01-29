@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:dio/dio.dart';
+//import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -54,8 +55,6 @@ Future<List<String>> _getList() async {
   return ret;
 }
 
-List<Registry> registry = new List<Registry>();
-
 Future<dynamic> onSelectNotification(String payload) async {
   print("notificação recebida");
   print(payload);
@@ -66,8 +65,7 @@ FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 Future _showNotificationWithSound(Registry reg) async {
   var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
       'your channel id', 'your channel name', 'your channel description',
-      importance: Importance.Max,
-      priority: Priority.High);
+      importance: Importance.Max, priority: Priority.High);
   var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
   var platformChannelSpecifics = new NotificationDetails(
       androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
@@ -87,25 +85,50 @@ void _sendNotification(Registry reg) {
   var initializationSettings = new InitializationSettings(
       initializationSettingsAndroid, initializationSettingsIOS);
   flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
-  flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
+  flutterLocalNotificationsPlugin.initialize(initializationSettings,
+      onSelectNotification: onSelectNotification);
 
   _showNotificationWithSound(reg);
 }
 
 void callbackDispatcher() {
+  print("Inicio callbackDispatcher");
   Workmanager.executeTask((task, inputData) async {
-    List<String> list = await _getList();
-    if (list != null) {
-      registry = _fromListString2ListRegistry(list);
+    print("Inicio executeTask");
+    await _updateRegistryInfos();
+    print("Fim executeTask");
+    return Future.value(true);
+  });
+}
 
-      for (int i = 0; i < registry.length; ++i) {
-        Response response = await Dio().post(
+Future<List<Registry>> _updateRegistryInfos() async {
+  print("Inicio _updateRegistryInfos");
+  List<Registry> registry = new List<Registry>();
+  List<String> list = await _getList();
+  if (list != null) {
+    registry = _fromListString2ListRegistry(list);
+
+    for (int i = 0; i < registry.length; ++i) {
+      try {
+        print("Enviando request");
+        Response response = await Dio(new BaseOptions(connectTimeout: 5000)).post(
             "http://www.10ri-rj.com.br/Consultas.asp",
             data: {
               "tipo": "registro",
               "txtregistro": registry[i].id.toString()
             },
             options: Options(contentType: Headers.formUrlEncodedContentType));
+
+        /*Map<String, dynamic> body = {"tipo": "registro","txtregistro": registry[i].id.toString()};
+        var response = await http.post("http://www.10ri-rj.com.br/Consultas.asp",
+            body: body,
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            encoding: Encoding.getByName("utf-8")
+        );*/
+        print("Recebido request");
         var document = parse(response.data.toString());
         var posicao = document.querySelector('[ name="posicao" ]');
         var apresentante = document.querySelector('[ name="apresentante" ]');
@@ -114,49 +137,42 @@ void callbackDispatcher() {
         print(value);
         if (registry[i].status != value) {
           registry[i].status = value;
+          print("_sendNotification" + registry[i].id.toString());
           _sendNotification(registry[i]);
         }
         List<String> list = _fromListRegistry2ListString(registry);
         _saveList(list);
+      } catch (e) {
+        print("Exception " + e.toString());
       }
     }
-
-    return Future.value(true);
-  });
+  }
+  return registry;
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  List<String> list = await _getList();
-  if (list != null) {
-    registry = _fromListString2ListRegistry(list);
-  } else {
-    registry = <Registry>[new Registry(387949), Registry(388384)];
-    List<String> list = _fromListRegistry2ListString(registry);
-    await _saveList(list);
-  }
-
   Workmanager.initialize(
       callbackDispatcher, // The top level function, aka callbackDispatcher
       isInDebugMode:
-          false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+          true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
       );
-  //Workmanager.registerOneOffTask("1", "simpleTask"); //Android only (see below)
   Workmanager.registerPeriodicTask(
     "2",
     "requestRGIPeriodicTask",
     // When no frequency is provided the default 15 minutes is set.
     // Minimum frequency is 15 min. Android will automatically change your frequency to 15 min if you have configured a lower frequency.
     frequency: Duration(minutes: 15),
+    constraints: Constraints(
+      networkType: NetworkType.connected,
+    )
   );
 
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-
-
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -200,29 +216,52 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
-  void _removeItem(int index) {
-    setState(() async {
-      List<String> list = await _getList();
-      if (list != null) {
-        registry = _fromListString2ListRegistry(list);
-      }
-      registry.removeAt(index);
-      list = _fromListRegistry2ListString(registry);
-      _saveList(list);
+  List<Registry> registry = new List<Registry>();
+
+  _MyHomePageState() {
+    loadRegistry().then((_registry) {
+      setState(() {
+        registry = _registry;
+      });
     });
   }
 
+  Future<List<Registry>> loadRegistry() async {
+    List<Registry> _registry = new List<Registry>();
+    List<String> list = await _getList();
+    if (list != null) {
+      _registry = _fromListString2ListRegistry(list);
+    } else {
+      _registry = <Registry>[new Registry(387949), Registry(388384)];
+      List<String> list = _fromListRegistry2ListString(_registry);
+      await _saveList(list);
+    }
+    return _registry;
+  }
+
+  void _removeItem(int index) async {
+    List<String> list = await _getList();
+    if (list != null) {
+      registry = _fromListString2ListRegistry(list);
+    }
+    setState(() {
+      registry.removeAt(index);
+    });
+    list = _fromListRegistry2ListString(registry);
+    _saveList(list);
+  }
+
   void _addItem() async {
-    setState(() async {
-      List<String> list = await _getList();
-      if (list != null) {
-        registry = _fromListString2ListRegistry(list);
-      }
+    List<String> list = await _getList();
+    if (list != null) {
+      registry = _fromListString2ListRegistry(list);
+    }
+    setState(() {
       _counter++;
       registry.add(new Registry(_counter));
-      list = _fromListRegistry2ListString(registry);
-      _saveList(list);
     });
+    list = _fromListRegistry2ListString(registry);
+    _saveList(list);
   }
 
   @override
@@ -254,14 +293,15 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Text(
                         'Registro: ${registry[index].id} | Posição: ${registry[index].status} | \n Nome: ${registry[index].name}'),
                     onTap: () async {
-                      List<String> list = await _getList();
-                      if (list != null) {
-                        registry = _fromListString2ListRegistry(list);
-                      }
+                      List<Registry> _registry = await _updateRegistryInfos();
+                      setState(() {
+                        registry = _registry;
+                      });
 
                       return Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text(
-                            'Registro: ${registry[index].id} | Posição: ${registry[index].status} | Nome: ${registry[index].name}')));},
+                          content: Text(
+                              'Registro: ${registry[index].id} | Posição: ${registry[index].status} | Nome: ${registry[index].name}')));
+                    },
                   ),
                   GestureDetector(
                       child: Icon(Icons.remove),
