@@ -6,6 +6,10 @@ import 'package:html/parser.dart' show parse;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_app/popup_content.dart';
+import 'package:flutter_app/popup.dart';
+import 'package:flutter_app/form_add_item.dart';
+import 'dart:async';
 
 class Registry {
   int id;
@@ -111,42 +115,36 @@ Future<List<Registry>> _updateRegistryInfos() async {
     for (int i = 0; i < registry.length; ++i) {
       try {
         print("Enviando request");
-        Response response = await Dio(new BaseOptions(connectTimeout: 5000)).post(
-            "http://www.10ri-rj.com.br/Consultas.asp",
-            data: {
-              "tipo": "registro",
-              "txtregistro": registry[i].id.toString()
-            },
-            options: Options(contentType: Headers.formUrlEncodedContentType));
-
-        /*Map<String, dynamic> body = {"tipo": "registro","txtregistro": registry[i].id.toString()};
-        var response = await http.post("http://www.10ri-rj.com.br/Consultas.asp",
-            body: body,
-            headers: {
-              "Accept": "application/json",
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            encoding: Encoding.getByName("utf-8")
-        );*/
-        print("Recebido request");
-        var document = parse(response.data.toString());
-        var posicao = document.querySelector('[ name="posicao" ]');
-        var apresentante = document.querySelector('[ name="apresentante" ]');
-        registry[i].name = apresentante.attributes["value"];
-        String value = posicao.attributes["value"];
-        print(value);
-        if (registry[i].status != value) {
-          registry[i].status = value;
+        Registry reg = await _getRegistryInfo(registry[i].id);
+        registry[i].name = reg.name;
+        print(reg.status);
+        if (registry[i].status != reg.status) {
+          registry[i].status = reg.status;
           print("_sendNotification" + registry[i].id.toString());
           _sendNotification(registry[i]);
         }
-        List<String> list = _fromListRegistry2ListString(registry);
-        _saveList(list);
-      } catch (e) {
-        print("Exception " + e.toString());
+        _saveList(_fromListRegistry2ListString(registry));
+      } catch (e, stacktrace) {
+        print("Exception " + e.toString() + " | " + stacktrace.toString());
       }
     }
   }
+  return registry;
+}
+
+Future<Registry> _getRegistryInfo(int id) async {
+  Registry registry = new Registry(id);
+  Response response = await Dio(new BaseOptions(connectTimeout: 5000)).post(
+      "http://www.10ri-rj.com.br/Consultas.asp",
+      data: {"tipo": "registro", "txtregistro": id.toString()},
+      options: Options(contentType: Headers.formUrlEncodedContentType));
+
+  print("Recebido request");
+  var document = parse(response.data.toString());
+  var posicao = document.querySelector('[ name="posicao" ]');
+  var apresentante = document.querySelector('[ name="apresentante" ]');
+  registry.name = apresentante.attributes["value"];
+  registry.status = posicao.attributes["value"];
   return registry;
 }
 
@@ -158,16 +156,13 @@ void main() async {
       isInDebugMode:
           true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
       );
-  Workmanager.registerPeriodicTask(
-    "2",
-    "requestRGIPeriodicTask",
-    // When no frequency is provided the default 15 minutes is set.
-    // Minimum frequency is 15 min. Android will automatically change your frequency to 15 min if you have configured a lower frequency.
-    frequency: Duration(minutes: 15),
-    constraints: Constraints(
-      networkType: NetworkType.connected,
-    )
-  );
+  Workmanager.registerPeriodicTask("2", "requestRGIPeriodicTask",
+      // When no frequency is provided the default 15 minutes is set.
+      // Minimum frequency is 15 min. Android will automatically change your frequency to 15 min if you have configured a lower frequency.
+      frequency: Duration(minutes: 15),
+      constraints: Constraints(
+        networkType: NetworkType.connected,
+      ));
 
   runApp(MyApp());
 }
@@ -214,16 +209,18 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
 
   List<Registry> registry = new List<Registry>();
 
   _MyHomePageState() {
-    loadRegistry().then((_registry) {
-      setState(() {
-        registry = _registry;
+    Timer.periodic(new Duration(seconds: 10), (timer) {
+      loadRegistry().then((_registry) {
+        setState(() {
+          registry = _registry;
+        });
       });
     });
+
   }
 
   Future<List<Registry>> loadRegistry() async {
@@ -233,8 +230,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _registry = _fromListString2ListRegistry(list);
     } else {
       _registry = <Registry>[new Registry(387949), Registry(388384)];
-      List<String> list = _fromListRegistry2ListString(_registry);
-      await _saveList(list);
+      await _saveList(_fromListRegistry2ListString(_registry));
     }
     return _registry;
   }
@@ -247,21 +243,22 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       registry.removeAt(index);
     });
-    list = _fromListRegistry2ListString(registry);
-    _saveList(list);
+    _saveList(_fromListRegistry2ListString(registry));
   }
 
   void _addItem() async {
-    List<String> list = await _getList();
-    if (list != null) {
-      registry = _fromListString2ListRegistry(list);
-    }
-    setState(() {
-      _counter++;
-      registry.add(new Registry(_counter));
-    });
-    list = _fromListRegistry2ListString(registry);
-    _saveList(list);
+
+    PopupContent.showPopup(context, new FormAddItem((id) async {
+      List<String> list = await _getList();
+      if (list != null) {
+        registry = _fromListString2ListRegistry(list);
+      }
+      setState(() {
+        registry.add(new Registry(id));
+      });
+      _saveList(_fromListRegistry2ListString(registry));
+      Navigator.pop(context);
+    }), 'Adicionar Registro');
   }
 
   @override
@@ -291,12 +288,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Row(children: <Widget>[
                   GestureDetector(
                     child: Text(
-                        'Registro: ${registry[index].id} | Posição: ${registry[index].status} | \n Nome: ${registry[index].name}'),
+                        'Registro: ${registry[index].id}\nPosição: ${registry[index].status}\n Nome: ${registry[index].name}'),
                     onTap: () async {
-                      List<Registry> _registry = await _updateRegistryInfos();
+                      Registry reg = await _getRegistryInfo(registry[index].id);
                       setState(() {
-                        registry = _registry;
+                        registry[index] = reg;
                       });
+                      _saveList(_fromListRegistry2ListString(registry));
 
                       return Scaffold.of(context).showSnackBar(SnackBar(
                           content: Text(
