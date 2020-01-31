@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:dio/dio.dart';
-//import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_app/popup_content.dart';
-import 'package:flutter_app/popup.dart';
-import 'package:flutter_app/form_add_item.dart';
+import 'package:rgi_10_rj/popup_content.dart';
+import 'package:rgi_10_rj/form_add_item.dart';
 import 'dart:async';
 
 class Registry {
@@ -157,7 +155,7 @@ void main() async {
   Workmanager.initialize(
       callbackDispatcher, // The top level function, aka callbackDispatcher
       isInDebugMode:
-          true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+          false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
       );
   Workmanager.registerPeriodicTask("2", "requestRGIPeriodicTask",
       // When no frequency is provided the default 15 minutes is set.
@@ -175,7 +173,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '10º Registro de Imóveis',
+      title: '10º Registro de Imóveis RJ',
       theme: ThemeData(
         // This is the theme of your application.
         //

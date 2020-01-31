@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/popup.dart';
+import 'package:rgi_10_rj/popup.dart';
 
 class PopupContent extends StatefulWidget {
   final Widget content;

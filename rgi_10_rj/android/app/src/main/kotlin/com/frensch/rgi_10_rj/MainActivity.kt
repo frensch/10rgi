@@ -1,4 +1,4 @@
-package com.frensch.flutter_app
+package com.frensch.rgi_10_rj
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity
