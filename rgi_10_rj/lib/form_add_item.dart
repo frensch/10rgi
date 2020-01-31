@@ -34,6 +34,10 @@ class FormAddItemState extends State<FormAddItem> {
               padding: const EdgeInsets.all(20),
         child:
           TextFormField(
+            keyboardType: TextInputType.number,
+            style: TextStyle(
+              color: Colors.black,
+            ),
             decoration: InputDecoration(hintText: 'Digite o número do Talão'),
             // The validator receives the text that the user has entered.
             validator: (value) {
