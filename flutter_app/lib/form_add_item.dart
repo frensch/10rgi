@@ -54,8 +54,9 @@ class FormAddItemState extends State<FormAddItem> {
                 // If the form is valid, display a snackbar. In the real world,
                 // you'd often call a server or save the information in a database.
 
-                Scaffold.of(context)
-                    .showSnackBar(SnackBar(content: Text('Processing Data')));
+                //Scaffold.of(context)
+                    //.showSnackBar(SnackBar(content: Text('Processando'))).;
+                Navigator.pop(context);
               }
             },
             child: Text('Submit'),

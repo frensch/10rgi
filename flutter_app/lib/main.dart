@@ -150,6 +150,9 @@ Future<Registry> _getRegistryInfo(int id) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  //var prefs = await SharedPreferences.getInstance();
+  //prefs.clear();
+
 
   Workmanager.initialize(
       callbackDispatcher, // The top level function, aka callbackDispatcher
@@ -212,15 +215,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   List<Registry> registry = new List<Registry>();
 
-  _MyHomePageState() {
-    Timer.periodic(new Duration(seconds: 10), (timer) {
-      loadRegistry().then((_registry) {
-        setState(() {
-          registry = _registry;
-        });
+  void loadRegistryAndFill() {
+    loadRegistry().then((_registry) {
+      setState(() {
+        registry = _registry;
       });
     });
-
+  }
+  _MyHomePageState() {
+    loadRegistryAndFill();
+    Timer.periodic(new Duration(seconds: 10), (timer) {
+      loadRegistryAndFill();
+    });
   }
 
   Future<List<Registry>> loadRegistry() async {
@@ -229,7 +235,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (list != null) {
       _registry = _fromListString2ListRegistry(list);
     } else {
-      _registry = <Registry>[new Registry(387949), Registry(388384)];
+      _registry = new List<Registry>();//<Registry>[new Registry(387949), Registry(388384)];
       await _saveList(_fromListRegistry2ListString(_registry));
     }
     return _registry;
@@ -247,8 +253,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _addItem() async {
-
-    PopupContent.showPopup(context, new FormAddItem((id) async {
+    await PopupContent.showPopup(context, new FormAddItem((id) async {
       List<String> list = await _getList();
       if (list != null) {
         registry = _fromListString2ListRegistry(list);
@@ -256,8 +261,11 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         registry.add(new Registry(id));
       });
-      _saveList(_fromListRegistry2ListString(registry));
-      Navigator.pop(context);
+      await _saveList(_fromListRegistry2ListString(registry));
+      List<Registry> _registry = await _updateRegistryInfos();
+      setState(() {
+        registry = _registry;
+      });
     }), 'Adicionar Registro');
   }
 
@@ -288,7 +296,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Row(children: <Widget>[
                   GestureDetector(
                     child: Text(
-                        'Registro: ${registry[index].id}\nPosição: ${registry[index].status}\n Nome: ${registry[index].name}'),
+                        'Registro: ${registry[index].id}\nPosição: ${registry[index].status}\nNome: ${registry[index].name}'),
                     onTap: () async {
                       Registry reg = await _getRegistryInfo(registry[index].id);
                       setState(() {
