@@ -30,6 +30,9 @@ class FormAddItemState extends State<FormAddItem> {
     return Form(
         key: _formKey,
         child: Column(children: <Widget>[
+          Container(
+              padding: const EdgeInsets.all(20),
+        child:
           TextFormField(
             decoration: InputDecoration(hintText: 'Digite o número do Talão'),
             // The validator receives the text that the user has entered.
@@ -46,7 +49,7 @@ class FormAddItemState extends State<FormAddItem> {
               callbackReturn(id);
               return null;
             },
-          ),
+          )),
           RaisedButton(
             onPressed: () {
               // Validate returns true if the form is valid, otherwise false.
@@ -59,7 +62,7 @@ class FormAddItemState extends State<FormAddItem> {
                 Navigator.pop(context);
               }
             },
-            child: Text('Submit'),
+            child: Text('Adicionar'),
           )
         ]));
   }

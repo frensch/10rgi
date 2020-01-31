@@ -7,6 +7,7 @@ class PopupLayout extends ModalRoute {
   double left;
   double right;
   Color bgColor;
+  double height;
   final Widget child;
 
   PopupLayout(
@@ -16,7 +17,8 @@ class PopupLayout extends ModalRoute {
       this.top,
       this.bottom,
       this.left,
-      this.right});
+      this.right,
+      this.height});
 
   @override
   Duration get transitionDuration => Duration(milliseconds: 300);
@@ -63,14 +65,15 @@ class PopupLayout extends ModalRoute {
 
   //the dynamic content pass by parameter
   Widget _buildOverlayContent(BuildContext context) {
-    return Container(
+    return Column( mainAxisSize: MainAxisSize.min, children: <Widget>[ Container(
+      height: this.height,
       margin: EdgeInsets.only(
           bottom: this.bottom,
           left: this.left,
           right: this.right,
           top: this.top),
       child: child,
-    );
+    )]);
   }
 
   @override

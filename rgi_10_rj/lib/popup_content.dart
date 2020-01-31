@@ -18,6 +18,7 @@ class PopupContent extends StatefulWidget {
         left: 30,
         right: 30,
         bottom: 50,
+        height: 220,
         child: PopupContent(
           content: Scaffold(
             appBar: AppBar(
@@ -52,6 +53,8 @@ class _PopupContentState extends State<PopupContent> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      color: Colors.grey,
+      height: 100,
       child: widget.content,
     );
   }
