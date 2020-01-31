@@ -73,7 +73,7 @@ Future _showNotificationWithSound(Registry reg) async {
       androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
   await flutterLocalNotificationsPlugin.show(
     0,
-    "Mudança de Posição RGI: " + reg.id.toString(),
+    "Mudança de Posição para: " + reg.name,
     "Posição do RGI: " + reg.id.toString() + " mudou para " + reg.status,
     platformChannelSpecifics,
     /*payload: 'Custom_Sound',*/
@@ -151,7 +151,6 @@ void main() async {
   //var prefs = await SharedPreferences.getInstance();
   //prefs.clear();
 
-
   Workmanager.initialize(
       callbackDispatcher, // The top level function, aka callbackDispatcher
       isInDebugMode:
@@ -186,7 +185,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: '10º Registro de Imóveis'),
+      home: MyHomePage(title: '10º Registro de Imóveis RJ'),
     );
   }
 }
@@ -210,7 +209,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   List<Registry> registry = new List<Registry>();
 
   void loadRegistryAndFill() {
@@ -220,6 +218,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     });
   }
+
   _MyHomePageState() {
     loadRegistryAndFill();
     Timer.periodic(new Duration(seconds: 10), (timer) {
@@ -233,7 +232,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (list != null) {
       _registry = _fromListString2ListRegistry(list);
     } else {
-      _registry = new List<Registry>();//<Registry>[new Registry(387949), Registry(388384)];
+      _registry = new List<
+          Registry>(); //<Registry>[new Registry(387949), Registry(388384)];
       await _saveList(_fromListRegistry2ListString(_registry));
     }
     return _registry;
@@ -288,8 +288,9 @@ class _MyHomePageState extends State<MyHomePage> {
             itemCount: registry.length,
             itemBuilder: (BuildContext context, int index) {
               return Container(
-                height: 50,
                 color: Colors.amber[500],
+                padding: const EdgeInsets.only(
+                    left: 20, right: 20, top: 10, bottom: 10),
                 child: Center(
                     child: Row(children: <Widget>[
                   GestureDetector(
@@ -307,9 +308,20 @@ class _MyHomePageState extends State<MyHomePage> {
                               'Registro: ${registry[index].id} | Posição: ${registry[index].status} | Nome: ${registry[index].name}')));
                     },
                   ),
-                  GestureDetector(
-                      child: Icon(Icons.remove),
-                      onTap: () => _removeItem(index))
+                  Expanded(
+                      child: Row(children: <Widget>[
+                      Expanded( child: Container(
+                      alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 15),
+                          child: GestureDetector(
+                              onTap: () => _updateRegistryInfos(),
+                              child: Icon(Icons.cached),
+                            ))),
+                            GestureDetector(
+                              onTap: () => _removeItem(index),
+                              child: Icon(Icons.delete),
+                            )
+                          ]))
                 ])),
               );
             },
