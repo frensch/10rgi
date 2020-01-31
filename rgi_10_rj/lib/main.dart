@@ -173,7 +173,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '10º Registro de Imóveis RJ',
-      theme: ThemeData(
+      theme: ThemeData(primaryColor: Color.fromARGB(255, 158, 21, 7), textTheme: Typography().white, accentColor: Colors.grey[100],
         // This is the theme of your application.
         //
         // Try running your application with "flutter run". You'll see the
@@ -288,7 +288,7 @@ class _MyHomePageState extends State<MyHomePage> {
             itemCount: registry.length,
             itemBuilder: (BuildContext context, int index) {
               return Container(
-                color: Colors.amber[500],
+                color: Color.fromARGB(255, 229, 76, 60),
                 padding: const EdgeInsets.only(
                     left: 20, right: 20, top: 10, bottom: 10),
                 child: Center(
@@ -315,11 +315,11 @@ class _MyHomePageState extends State<MyHomePage> {
                           padding: const EdgeInsets.only(right: 15),
                           child: GestureDetector(
                               onTap: () => _updateRegistryInfos(),
-                              child: Icon(Icons.cached),
+                              child: Icon(Icons.cached, color: Colors.white,),
                             ))),
                             GestureDetector(
                               onTap: () => _removeItem(index),
-                              child: Icon(Icons.delete),
+                              child: Icon(Icons.delete, color: Colors.white,),
                             )
                           ]))
                 ])),
