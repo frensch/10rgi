@@ -159,7 +159,7 @@ void main() async {
   Workmanager.registerPeriodicTask("2", "requestRGIPeriodicTask",
       // When no frequency is provided the default 15 minutes is set.
       // Minimum frequency is 15 min. Android will automatically change your frequency to 15 min if you have configured a lower frequency.
-      frequency: Duration(minutes: 15),
+      frequency: Duration(hours: 2),
       constraints: Constraints(
         networkType: NetworkType.connected,
       ));
@@ -314,7 +314,17 @@ class _MyHomePageState extends State<MyHomePage> {
                       alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 15),
                           child: GestureDetector(
-                              onTap: () => _updateRegistryInfos(),
+                              onTap: () async {
+                                Registry reg = await _getRegistryInfo(registry[index].id);
+                                setState(() {
+                                  registry[index] = reg;
+                                });
+                                _saveList(_fromListRegistry2ListString(registry));
+
+                                return Scaffold.of(context).showSnackBar(SnackBar(
+                                    content: Text(
+                                        'Registro: ${registry[index].id} | Posição: ${registry[index].status} | Nome: ${registry[index].name}')));
+                              },
                               child: Icon(Icons.cached, color: Colors.white,),
                             ))),
                             GestureDetector(
